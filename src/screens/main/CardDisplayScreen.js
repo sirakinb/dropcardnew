@@ -5,44 +5,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Image,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import QRCode from 'react-native-qrcode-svg';
+import BusinessCard from '../../components/cards/BusinessCard';
+import QRCodeDisplay from '../../components/cards/QRCodeDisplay';
 
 export default function CardDisplayScreen({ navigation, route }) {
-  const { cardData = {}, avatar: initialAvatar } = route.params || {};
+  const { cardData = {}, avatar: initialAvatar, editMode = false } = route.params || {};
   const [avatar, setAvatar] = useState(initialAvatar || null);
 
   // Handle missing card data case
   if (!cardData || Object.keys(cardData).length === 0) {
-    navigation.goBack();
+    Alert.alert('Error', 'No card data available', [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
     return null;
   }
-
-  const qrData = (() => {
-    try {
-      const data = JSON.stringify({
-        name: cardData?.name || 'John Doe',
-        title: cardData?.title || 'Product Designer',
-        company: cardData?.company || '',
-        email: cardData?.email || '',
-        phone: cardData?.phone || '',
-        website: cardData?.website || '',
-      });
-      
-      // QR codes have size limits - approximately 2953 bytes for QR version 40
-      if (data.length > 2000) {
-        console.warn('QR data may be too large for reliable scanning');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error creating QR data:', error);
-      return JSON.stringify({ name: cardData?.name || 'John Doe' });
-    }
-  })();
 
   const handleEdit = () => {
     navigation.navigate('CreateCard', { 
@@ -54,96 +34,175 @@ export default function CardDisplayScreen({ navigation, route }) {
   };
 
   const handleShare = () => {
-    // TODO: Implement share functionality
-    console.log('Share card');
+    navigation.navigate('Share', { cardData });
   };
 
   const handlePreview = () => {
-    // TODO: Implement preview functionality
-    console.log('Preview card');
+    // Toggle between preview and edit modes
+    Alert.alert(
+      'Card Preview',
+      'This is how your card appears to others when shared.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleMore = () => {
-    // TODO: Implement more options
-    console.log('More options');
+    Alert.alert(
+      'More Options',
+      'Choose an action',
+      [
+        { text: 'Duplicate Card', onPress: () => handleDuplicate() },
+        { text: 'Delete Card', style: 'destructive', onPress: () => handleDelete() },
+        { text: 'Export as Image', onPress: () => handleExport() },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
-  const handleSaveChanges = () => {
-    try {
-      // TODO: Save changes to Supabase
-      navigation.navigate('MainTabs');
-    } catch (error) {
-      console.error('Navigation error:', error);
-      Alert.alert('Error', 'Failed to save changes. Please try again.');
-    }
+  const handleDuplicate = () => {
+    navigation.navigate('CreateCard', {
+      cardData: { ...cardData, name: `${cardData.name} Copy` },
+      avatar,
+      editMode: false
+    });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Card',
+      `Are you sure you want to delete "${cardData.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Implement delete functionality
+            navigation.goBack();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleExport = () => {
+    Alert.alert(
+      'Export Card',
+      'Export functionality coming soon!',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleBackToCards = () => {
+    navigation.navigate('MainTabs', { screen: 'Cards' });
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Your DropCard</Text>
-
-        {/* Card Container */}
-        <View style={styles.cardContainer}>
-          {/* QR Code */}
-          <View style={styles.qrSection}>
-            <QRCode
-              value={qrData}
-              size={200}
-              color="#000000"
-              backgroundColor="transparent"
-            />
-          </View>
-
-          <Text style={styles.scanText}>Scan to share card</Text>
-
-          {/* User Info */}
-          <View style={styles.userInfo}>
-            {avatar && (
-              <Image 
-                source={{ uri: avatar }} 
-                style={styles.avatar}
-                onError={(error) => {
-                  console.warn('Avatar failed to load:', error);
-                  setAvatar(null); // Clear invalid avatar
-                }}
-              />
-            )}
-            <View style={styles.userDetails}>
-              <Text style={styles.userName}>{cardData?.name || 'John Doe'}</Text>
-              <Text style={styles.userTitle}>{cardData?.title || 'Product Designer'}</Text>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
-              <Ionicons name="create-outline" size={20} color="#374151" />
-              <Text style={styles.actionText}>Edit</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionButton} onPress={handlePreview}>
-              <Ionicons name="eye-outline" size={20} color="#374151" />
-              <Text style={styles.actionText}>Preview</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-              <Ionicons name="share-outline" size={20} color="#374151" />
-              <Text style={styles.actionText}>Share</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionButton} onPress={handleMore}>
-              <Ionicons name="ellipsis-horizontal" size={20} color="#374151" />
-              <Text style={styles.actionText}>More</Text>
-            </TouchableOpacity>
-          </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Your Card</Text>
+          <TouchableOpacity onPress={handleMore}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#111827" />
+          </TouchableOpacity>
         </View>
 
-        {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+        {/* Business Card Preview */}
+        <View style={styles.cardSection}>
+          <BusinessCard 
+            cardData={cardData}
+            avatar={avatar}
+            themeColor={cardData.theme_color}
+            style={styles.businessCard}
+          />
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
+            <Ionicons name="create-outline" size={20} color="#374151" />
+            <Text style={styles.actionText}>Edit</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={handlePreview}>
+            <Ionicons name="eye-outline" size={20} color="#374151" />
+            <Text style={styles.actionText}>Preview</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+            <Ionicons name="share-outline" size={20} color="#374151" />
+            <Text style={styles.actionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* QR Code Section */}
+        <View style={styles.qrSection}>
+          <Text style={styles.sectionTitle}>QR Code</Text>
+          <QRCodeDisplay 
+            cardData={cardData}
+            size={200}
+            showActions={true}
+            style={styles.qrDisplay}
+          />
+        </View>
+
+        {/* Card Information */}
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Card Details</Text>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Name</Text>
+              <Text style={styles.infoValue}>{cardData.name || 'Not set'}</Text>
+            </View>
+            
+            {cardData.title && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Title</Text>
+                <Text style={styles.infoValue}>{cardData.title}</Text>
+              </View>
+            )}
+            
+            {cardData.company && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Company</Text>
+                <Text style={styles.infoValue}>{cardData.company}</Text>
+              </View>
+            )}
+            
+            {cardData.email && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{cardData.email}</Text>
+              </View>
+            )}
+            
+            {cardData.phone && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Phone</Text>
+                <Text style={styles.infoValue}>{cardData.phone}</Text>
+              </View>
+            )}
+            
+            {cardData.website && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Website</Text>
+                <Text style={styles.infoValue}>{cardData.website}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Action Button */}
+      <View style={styles.bottomAction}>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleBackToCards}>
+          <Text style={styles.primaryButtonText}>Back to Cards</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -155,71 +214,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 32,
-    paddingTop: 60,
-    paddingBottom: 32,
+  },
+  scrollContent: {
+    padding: 32,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 40,
-  },
-  cardContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 32,
-    alignItems: 'center',
-    marginBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  qrSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  scanText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 32,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 32,
-    gap: 12,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  userDetails: {
     flex: 1,
   },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
+  cardSection: {
+    marginBottom: 32,
   },
-  userTitle: {
-    fontSize: 14,
-    color: '#6B7280',
+  businessCard: {
+    width: '100%',
+    height: 200,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
+    marginBottom: 32,
   },
   actionButton: {
     alignItems: 'center',
@@ -231,14 +257,54 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontWeight: '500',
   },
-  saveButton: {
+  qrSection: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  qrDisplay: {
+    width: '100%',
+    height: 200,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  infoSection: {
+    marginBottom: 32,
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  infoItem: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: 'bold',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#111827',
+  },
+  bottomAction: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  primaryButton: {
     height: 56,
     backgroundColor: '#000000',
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
-  saveButtonText: {
+  primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',

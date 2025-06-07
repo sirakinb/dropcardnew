@@ -24,10 +24,25 @@ export default function CreateCardScreen({ navigation, route }) {
     email: cardData?.email || '',
     phone: cardData?.phone || '',
     website: cardData?.website || '',
+    themeColor: cardData?.theme_color || '#000000',
   });
   const [errors, setErrors] = useState({});
   const [avatar, setAvatar] = useState(initialAvatar || null);
   const [loading, setLoading] = useState(false);
+
+  // Available theme colors
+  const themeColors = [
+    '#000000', // Black
+    '#1F2937', // Dark Gray
+    '#DC2626', // Red
+    '#EA580C', // Orange
+    '#CA8A04', // Yellow
+    '#16A34A', // Green
+    '#0EA5E9', // Blue
+    '#7C3AED', // Purple
+    '#C2410C', // Brown
+    '#0F766E', // Teal
+  ];
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -283,6 +298,29 @@ export default function CreateCardScreen({ navigation, route }) {
             />
             {errors.website && <Text style={styles.errorText}>{errors.website}</Text>}
           </View>
+
+          {/* Theme Color Selection */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Card Theme</Text>
+            <Text style={styles.fieldDescription}>Choose a color theme for your business card</Text>
+            <View style={styles.colorPicker}>
+              {themeColors.map((color) => (
+                <TouchableOpacity
+                  key={color}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: color },
+                    formData.themeColor === color && styles.selectedColor
+                  ]}
+                  onPress={() => updateFormData('themeColor', color)}
+                >
+                  {formData.themeColor === color && (
+                    <Ionicons name="checkmark" size={16} color="#ffffff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         {/* Action Buttons */}
@@ -424,5 +462,25 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  fieldDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  colorPicker: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  colorOption: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedColor: {
+    borderWidth: 2,
+    borderColor: '#000000',
   },
 }); 
