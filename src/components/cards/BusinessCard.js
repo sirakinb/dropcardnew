@@ -25,11 +25,24 @@ export default function BusinessCard({
 
   // Generate gradient colors based on theme
   const getGradientColors = (color) => {
-    // If dark color, lighten for gradient
-    if (color === '#000000' || color === '#111827') {
-      return ['#1F2937', '#111827'];
-    }
-    return [color, tinycolor(color).setAlpha(0.5).toHex8String()]; // Add transparency
+    // Pre-defined gradient colors for each theme
+    const gradients = {
+      '#000000': ['#1F2937', '#111827'],
+      '#111827': ['#374151', '#1F2937'],
+      '#EF4444': ['#F87171', '#DC2626'], // Red
+      '#F97316': ['#FB923C', '#EA580C'], // Orange
+      '#EAB308': ['#FDE047', '#CA8A04'], // Yellow
+      '#22C55E': ['#4ADE80', '#16A34A'], // Green
+      '#3B82F6': ['#60A5FA', '#2563EB'], // Blue
+      '#8B5CF6': ['#A78BFA', '#7C3AED'], // Purple
+      '#EC4899': ['#F472B6', '#DB2777'], // Pink
+      '#06B6D4': ['#22D3EE', '#0891B2'], // Cyan
+      '#84CC16': ['#A3E635', '#65A30D'], // Lime
+      '#F59E0B': ['#FBBF24', '#D97706']  // Amber
+    };
+
+    // Return pre-defined gradient or default for the given color
+    return gradients[color] || [color, '#1F2937'];
   };
 
   return (
