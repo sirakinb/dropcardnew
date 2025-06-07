@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+// Import AI service for business card OCR
+import { extractBusinessCardInfo } from '../../services/ai';
+
 // Try to import camera, but handle gracefully if not available
 let CameraView, useCameraPermissions;
 try {
@@ -67,8 +70,12 @@ export default function ScanScreen({ navigation }) {
   const [scannedData, setScannedData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [scanMode, setScanMode] = useState('qr'); // 'qr' or 'card'
+  const [capturing, setCapturing] = useState(false);
 
   const handleBarCodeScanned = ({ type, data }) => {
+    if (scanMode !== 'qr') return; // Only process QR codes in QR mode
+    
     setScanned(true);
     
     try {
@@ -81,13 +88,64 @@ export default function ScanScreen({ navigation }) {
         parsedData = parseVCard(data) || { raw: data };
       }
       
-      console.log('Scanned data:', parsedData);
+      console.log('Scanned QR data:', parsedData);
       setScannedData(parsedData);
       setShowPreview(true);
     } catch (error) {
       console.error('Error processing scanned data:', error);
       Alert.alert('Scan Error', 'Unable to process the scanned QR code.');
       setScanned(false);
+    }
+  };
+
+  const handleBusinessCardCapture = async () => {
+    if (!CameraView || capturing) return;
+    
+    setCapturing(true);
+    try {
+      const photo = await cameraRef.takePictureAsync({
+        quality: 0.8,
+        base64: false,
+        skipProcessing: false,
+      });
+      
+      console.log('Business card photo captured:', photo.uri);
+      
+      // Use OpenAI Vision API for real OCR
+      try {
+        const extractedData = await extractBusinessCardInfo(photo.uri);
+        console.log('OpenAI extracted data:', extractedData);
+        
+        setScannedData(extractedData);
+        setScanned(true);
+        setShowPreview(true);
+        setCapturing(false);
+        
+      } catch (ocrError) {
+        console.error('OCR extraction failed:', ocrError);
+        
+        // Fallback to manual entry with captured image reference
+        const fallbackData = {
+          name: 'Manual Entry Required',
+          title: '',
+          company: '',
+          email: '',
+          phone: '',
+          notes: `OCR failed: ${ocrError.message}. Please manually enter contact information.`,
+          imageUri: photo.uri, // Store image reference for manual review
+          raw: `Image captured at ${new Date().toISOString()}`
+        };
+        
+        setScannedData(fallbackData);
+        setScanned(true);
+        setShowPreview(true);
+        setCapturing(false);
+      }
+      
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+      Alert.alert('Capture Error', 'Failed to capture business card image.');
+      setCapturing(false);
     }
   };
 
@@ -189,7 +247,7 @@ export default function ScanScreen({ navigation }) {
         phone: scannedData.phone || '',
         company: scannedData.company || '',
         title: scannedData.title || '',
-        tags: ['scanned']
+        tags: [scanMode === 'qr' ? 'qr-scan' : 'business-card']
       };
 
       // Find any additional fields that aren't in the standard schema
@@ -200,18 +258,18 @@ export default function ScanScreen({ navigation }) {
         }
       });
 
-      // Create notes with scan info and any additional data
-      let notes = `Added via QR scan on ${new Date().toLocaleDateString()}`;
+      // Create notes with scan info and any additional data - Updated format
+      let notes = `Added on ${new Date().toLocaleDateString()}`;
       
       if (Object.keys(additionalFields).length > 0) {
-        notes += '\n\nAdditional Information:';
+        notes += '\n\n';
         Object.entries(additionalFields).forEach(([key, value]) => {
           const fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-          notes += `\n• ${fieldName}: ${value}`;
+          notes += `${fieldName}: ${value}\n`;
         });
       }
 
-      contactData.notes = notes;
+      contactData.notes = notes.trim();
 
       console.log('Creating contact with data:', contactData);
       console.log('Additional fields found:', additionalFields);
@@ -224,7 +282,7 @@ export default function ScanScreen({ navigation }) {
 
       Alert.alert(
         'Contact Added!',
-        `${contactData.name} has been added to your contacts.${Object.keys(additionalFields).length > 0 ? '\n\nAdditional information has been saved in the notes section.' : ''}`,
+        `${contactData.name} has been added to your contacts.`,
         [
           { 
             text: 'View Contacts', 
@@ -256,6 +314,9 @@ export default function ScanScreen({ navigation }) {
     }
   };
 
+  // Camera reference
+  let cameraRef = null;
+
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -272,7 +333,7 @@ export default function ScanScreen({ navigation }) {
           <Ionicons name="camera-outline" size={64} color="#9CA3AF" />
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionMessage}>
-            To scan QR codes and add business cards, we need access to your camera.
+            To scan QR codes and business cards, we need access to your camera.
           </Text>
           <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
@@ -288,8 +349,46 @@ export default function ScanScreen({ navigation }) {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Scan QR Code</Text>
-        <Text style={styles.headerSubtitle}>Point camera at a business card QR code</Text>
+        <Text style={styles.headerTitle}>
+          {scanMode === 'qr' ? 'Scan QR Code' : 'Scan Business Card'}
+        </Text>
+        <Text style={styles.headerSubtitle}>
+          {scanMode === 'qr' 
+            ? 'Point camera at a business card QR code' 
+            : 'Point camera at a business card'
+          }
+        </Text>
+        
+        {/* Mode Toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeButton, scanMode === 'qr' && styles.modeButtonActive]}
+            onPress={() => {
+              setScanMode('qr');
+              setScanned(false);
+              setScannedData(null);
+            }}
+          >
+            <Ionicons name="qr-code" size={20} color={scanMode === 'qr' ? '#000000' : '#ffffff'} />
+            <Text style={[styles.modeButtonText, scanMode === 'qr' && styles.modeButtonTextActive]}>
+              QR Code
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.modeButton, scanMode === 'card' && styles.modeButtonActive]}
+            onPress={() => {
+              setScanMode('card');
+              setScanned(false);
+              setScannedData(null);
+            }}
+          >
+            <Ionicons name="card" size={20} color={scanMode === 'card' ? '#000000' : '#ffffff'} />
+            <Text style={[styles.modeButtonText, scanMode === 'card' && styles.modeButtonTextActive]}>
+              Business Card
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Camera View */}
@@ -297,14 +396,18 @@ export default function ScanScreen({ navigation }) {
         <CameraView
           style={styles.camera}
           facing="back"
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          onBarcodeScanned={scanMode === 'qr' && !scanned ? handleBarCodeScanned : undefined}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'aztec', 'ean13', 'ean8', 'upc_e', 'upc_a', 'code39', 'code128'],
           }}
+          ref={(ref) => { cameraRef = ref; }}
         >
           {/* Scanning Overlay */}
           <View style={styles.overlay}>
-            <View style={styles.scanArea}>
+            <View style={[
+              styles.scanArea,
+              scanMode === 'card' ? styles.scanAreaCard : styles.scanAreaQR
+            ]}>
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />
               <View style={[styles.corner, styles.bottomLeft]} />
@@ -314,7 +417,16 @@ export default function ScanScreen({ navigation }) {
             {scanned && (
               <View style={styles.scannedIndicator}>
                 <Ionicons name="checkmark-circle" size={64} color="#10B981" />
-                <Text style={styles.scannedText}>QR Code Detected!</Text>
+                <Text style={styles.scannedText}>
+                  {scanMode === 'qr' ? 'QR Code Detected!' : 'Business Card Captured!'}
+                </Text>
+              </View>
+            )}
+            
+            {capturing && (
+              <View style={styles.capturingIndicator}>
+                <Ionicons name="scan" size={64} color="#ffffff" />
+                <Text style={styles.capturingText}>Extracting with AI...</Text>
               </View>
             )}
           </View>
@@ -323,10 +435,23 @@ export default function ScanScreen({ navigation }) {
 
       {/* Actions */}
       <View style={styles.actions}>
+        {scanMode === 'card' && !scanned && !capturing && (
+          <TouchableOpacity 
+            style={styles.captureButton} 
+            onPress={handleBusinessCardCapture}
+          >
+            <Ionicons name="camera" size={24} color="#ffffff" />
+            <Text style={styles.captureText}>Capture Card</Text>
+          </TouchableOpacity>
+        )}
+        
         {scanned && (
           <TouchableOpacity 
             style={styles.rescanButton} 
-            onPress={() => setScanned(false)}
+            onPress={() => {
+              setScanned(false);
+              setScannedData(null);
+            }}
           >
             <Ionicons name="refresh" size={20} color="#6B7280" />
             <Text style={styles.rescanText}>Scan Again</Text>
@@ -349,7 +474,9 @@ export default function ScanScreen({ navigation }) {
             <TouchableOpacity onPress={() => setShowPreview(false)}>
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Business Card Scanned</Text>
+            <Text style={styles.modalTitle}>
+              {scanMode === 'qr' ? 'QR Code Scanned' : 'Business Card Scanned'}
+            </Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -413,18 +540,6 @@ export default function ScanScreen({ navigation }) {
                     );
                   })}
                 </View>
-                
-                {/* Show info about additional fields */}
-                {Object.keys(scannedData).filter(key => 
-                  !['name', 'email', 'phone', 'company', 'title', 'raw'].includes(key) && scannedData[key]
-                ).length > 0 && (
-                  <View style={styles.additionalFieldsInfo}>
-                    <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
-                    <Text style={styles.additionalFieldsText}>
-                      Additional information will be saved in the notes section
-                    </Text>
-                  </View>
-                )}
               </View>
             )}
           </ScrollView>
@@ -527,6 +642,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanArea: {
+    width: 250,
+    height: 250,
+    backgroundColor: 'transparent',
+    position: 'relative',
+  },
+  scanAreaCard: {
+    width: 320,
+    height: 200,
+    backgroundColor: 'transparent',
+    position: 'relative',
+  },
+  scanAreaQR: {
     width: 250,
     height: 250,
     backgroundColor: 'transparent',
@@ -737,5 +864,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 4,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 12,
+  },
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    borderRadius: 12,
+    gap: 8,
+  },
+  modeButtonActive: {
+    backgroundColor: '#ffffff',
+  },
+  modeButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modeButtonTextActive: {
+    color: '#000000',
+  },
+  captureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 8,
+  },
+  captureText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  capturingIndicator: {
+    position: 'absolute',
+    top: 100,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 20,
+    borderRadius: 12,
+  },
+  capturingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 8,
   },
 }); 

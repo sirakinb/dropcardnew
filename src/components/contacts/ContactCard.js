@@ -89,11 +89,6 @@ export default function ContactCard({ contact, onPress }) {
           </Text>
         )}
 
-        {/* Last Contact */}
-        <Text style={styles.lastContact}>
-          Met: {formatLastContact(contact.met_at)}
-        </Text>
-
         {/* Additional metadata if available */}
         {contact.location && (
           <Text style={styles.metadata} numberOfLines={1}>
@@ -210,10 +205,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 6,
     lineHeight: 18,
-  },
-  lastContact: {
-    fontSize: 12,
-    color: '#9CA3AF',
   },
   metadata: {
     fontSize: 12,
