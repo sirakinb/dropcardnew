@@ -152,35 +152,33 @@ export const businessCardService = {
     }
   },
 
-  async setPrimaryCard(cardId) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+async setPrimaryCard(cardId) {
+   try {
+     const { data: { user } } = await supabase.auth.getUser();
+     if (!user) throw new Error('User not authenticated');
 
-      // First, unset any existing primary cards for this user
-      const { error: unsetError } = await supabase
-        .from('business_cards')
-        .update({ is_primary: false })
-        .eq('user_id', user.id);
-      
-      if (unsetError) throw unsetError;
+    const { error } = await supabase
+      .rpc('set_primary_card', { 
+        card_id: cardId, 
+        user_id: user.id 
+      });
 
-      // Then set the selected card as primary
-      const { data, error } = await supabase
-        .from('business_cards')
-        .update({ is_primary: true })
-        .eq('id', cardId)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error setting primary card:', error);
-      return { data: null, error: error.message };
-    }
-  }
+     if (error) throw error;
+    
+    // Fetch the updated card
+    const { data, error: fetchError } = await supabase
+      .from('business_cards')
+      .select('*')
+      .eq('id', cardId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    return { data, error: null };
+   } catch (error) {
+     console.error('Error setting primary card:', error);
+     return { data: null, error: error.message };
+   }
+ }
 };
 
 // Contact Service
@@ -282,12 +280,14 @@ export const contactService = {
         userIdToUse = user.id;
       }
 
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('user_id', userIdToUse)
-        .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%,title.ilike.%${query}%`)
-        .order('created_at', { ascending: false });
+      // Escape special characters for SQL LIKE pattern
+      const escapedQuery = query.replace(/[%_]/g, '\\$&');
+       const { data, error } = await supabase
+         .from('contacts')
+         .select('*')
+         .eq('user_id', userIdToUse)
+        .or(`name.ilike.%${escapedQuery}%,email.ilike.%${escapedQuery}%,company.ilike.%${escapedQuery}%,title.ilike.%${escapedQuery}%`)
+         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return { data: data || [], error: null };
@@ -351,21 +351,25 @@ async createFollowUp(followUpData) {
     }
   },
 
-  async getUserFollowUps(userId) {
-    try {
-      const { data, error } = await supabase
-        .from('follow_ups')
-        .select(`
-          *,
-          contacts (
-            id,
-            name,
-            email,
-            company
-          )
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+async getUserFollowUps(userId) {
+   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    if (user.id !== userId) throw new Error('Unauthorized access');
+
+     const { data, error } = await supabase
+       .from('follow_ups')
+       .select(`
+         *,
+         contacts (
+           id,
+           name,
+           email,
+           company
+         )
+       `)
+       .eq('user_id', userId)
+       .order('created_at', { ascending: false });
 
       if (error) throw error;
       return { data, error: null };

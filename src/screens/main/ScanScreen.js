@@ -16,7 +16,12 @@ import { contactService } from '../../services/database';
 
 export default function ScanScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
+
+  useEffect(() => {
+    if (!permission) {
+      requestPermission();
+    }
+  }, [permission]);  const [scanned, setScanned] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);

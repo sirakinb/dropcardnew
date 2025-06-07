@@ -10,6 +10,7 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../../contexts/AuthContext';
 import { profileService } from '../../services/database';
 
@@ -26,6 +27,7 @@ export default function SettingsScreen({ navigation }) {
 
   useEffect(() => {
     loadProfile();
+    loadPreferences();
   }, []);
 
   const loadProfile = async () => {
@@ -39,6 +41,26 @@ export default function SettingsScreen({ navigation }) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPreferences = async () => {
+    try {
+      const savedPreferences = await AsyncStorage.getItem('userPreferences');
+      if (savedPreferences) {
+        const parsedPreferences = JSON.parse(savedPreferences);
+        setPreferences(parsedPreferences);
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
+
+  const savePreferences = async (newPreferences) => {
+    try {
+      await AsyncStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+    } catch (error) {
+      console.error('Error saving preferences:', error);
     }
   };
 
@@ -82,11 +104,14 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
-  const togglePreference = (key) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
+  const togglePreference = async (key) => {
+    const newPreferences = {
+      ...preferences,
+      [key]: !preferences[key]
+    };
+    
+    setPreferences(newPreferences);
+    await savePreferences(newPreferences);
   };
 
   const SettingItem = ({ icon, title, subtitle, onPress, rightElement, showChevron = true }) => (
