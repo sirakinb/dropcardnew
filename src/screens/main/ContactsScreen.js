@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import { contactService } from '../../services/database';
 import ContactCard from '../../components/contacts/ContactCard';
 
 export default function ContactsScreen({ navigation }) {
+  const { user, loading: authLoading } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +26,15 @@ export default function ContactsScreen({ navigation }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
 
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async () => {
+    // Don't try to load contacts if auth is still loading or user is not authenticated
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
       const result = await contactService.getUserContacts();
       if (result.error) {
         throw new Error(result.error);
@@ -50,7 +59,7 @@ export default function ContactsScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authLoading, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -58,12 +67,19 @@ export default function ContactsScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  // Load contacts when screen comes into focus
+  // Load contacts when screen comes into focus and user is authenticated
   useFocusEffect(
     useCallback(() => {
       loadContacts();
     }, [loadContacts])
   );
+
+  // Also load contacts when authentication state changes
+  useEffect(() => {
+    if (!authLoading && user) {
+      loadContacts();
+    }
+  }, [authLoading, user, loadContacts]);
 
   // Filter contacts based on search query and selected tags
   useEffect(() => {

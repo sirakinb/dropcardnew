@@ -11,15 +11,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import { businessCardService } from '../../services/database';
 
 export default function CardsScreen({ navigation }) {
+  const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadCards = async () => {
+  const loadCards = useCallback(async () => {
+    // Don't try to load cards if auth is still loading or user is not authenticated
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
       const result = await businessCardService.getUserCards();
       if (result.error) {
         throw new Error(result.error);
@@ -31,7 +40,7 @@ export default function CardsScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authLoading, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -39,12 +48,19 @@ export default function CardsScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  // Load cards when screen comes into focus
+  // Load cards when screen comes into focus and user is authenticated
   useFocusEffect(
     useCallback(() => {
       loadCards();
-    }, [])
+    }, [loadCards])
   );
+
+  // Also load cards when authentication state changes
+  useEffect(() => {
+    if (!authLoading && user) {
+      loadCards();
+    }
+  }, [authLoading, user, loadCards]);
 
   const handleCardPress = (card) => {
     navigation.navigate('CardDisplay', { 
