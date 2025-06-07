@@ -2,19 +2,19 @@ import { supabase } from '../config/supabase';
 
 // Profile Service
 export const profileService = {
-  async createProfile(profileData) {
-    try {
-      const newProfileData = {
-        ...profileData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+async createProfile(profileData) {
+   try {
+    const newProfileData = {
+      ...profileData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([newProfileData])
-        .select()
-        .single();
+     const { data, error } = await supabase
+       .from('profiles')
+      .insert([newProfileData])
+       .select()
+       .single();
 
       if (error) throw error;
       return { data, error: null };
@@ -40,19 +40,19 @@ export const profileService = {
     }
   },
 
-  async updateProfile(userId, profileData) {
-    try {
-      const updateData = {
-        ...profileData,
-        updated_at: new Date().toISOString()
-      };
+async updateProfile(userId, profileData) {
+   try {
+    const updateData = {
+      ...profileData,
+      updated_at: new Date().toISOString()
+    };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId)
-        .select()
-        .single();
+     const { data, error } = await supabase
+       .from('profiles')
+      .update(updateData)
+       .eq('id', userId)
+       .select()
+       .single();
 
       if (error) throw error;
       return { data, error: null };
@@ -325,22 +325,23 @@ export const contactService = {
 
 // Follow-up Service
 export const followUpService = {
-  async createFollowUp(followUpData) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+async createFollowUp(followUpData) {
+   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
-      const newFollowUpData = {
-        ...followUpData,
-        user_id: user.id,
-        created_at: new Date().toISOString()
-      };
+    const newFollowUpData = {
+      ...followUpData,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-      const { data, error } = await supabase
-        .from('follow_ups')
-        .insert([newFollowUpData])
-        .select()
-        .single();
+     const { data, error } = await supabase
+       .from('follow_ups')
+      .insert([newFollowUpData])
+       .select()
+       .single();
 
       if (error) throw error;
       return { data, error: null };
@@ -374,14 +375,19 @@ export const followUpService = {
     }
   },
 
-  async updateFollowUp(followUpId, followUpData) {
-    try {
-      const { data, error } = await supabase
-        .from('follow_ups')
-        .update(followUpData)
-        .eq('id', followUpId)
-        .select()
-        .single();
+async updateFollowUp(followUpId, followUpData) {
+   try {
+    const updateData = {
+      ...followUpData,
+      updated_at: new Date().toISOString()
+    };
+
+     const { data, error } = await supabase
+       .from('follow_ups')
+      .update(updateData)
+       .eq('id', followUpId)
+       .select()
+       .single();
 
       if (error) throw error;
       return { data, error: null };
