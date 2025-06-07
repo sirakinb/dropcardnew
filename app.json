@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.sirakinb.dropcard",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "DropCard needs access to your photo library to upload profile pictures for your business cards.",
+        "NSCameraUsageDescription": "DropCard needs access to your camera to take profile pictures for your business cards."
       }
     },
     "android": {

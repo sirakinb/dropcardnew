@@ -24,7 +24,7 @@ export default function CreateCardScreen({ navigation, route }) {
     email: cardData?.email || '',
     phone: cardData?.phone || '',
     website: cardData?.website || '',
-    themeColor: cardData?.theme_color || '#000000',
+    theme_color: cardData?.theme_color || '#000000',
   });
   const [errors, setErrors] = useState({});
   const [avatar, setAvatar] = useState(initialAvatar || null);
@@ -96,6 +96,53 @@ export default function CreateCardScreen({ navigation, route }) {
 
   const handleImagePick = async () => {
     try {
+      // Show action sheet for camera vs photo library
+      Alert.alert(
+        'Upload Photo',
+        'Choose how you\'d like to add a photo',
+        [
+          { text: 'Camera', onPress: () => pickFromCamera() },
+          { text: 'Photo Library', onPress: () => pickFromLibrary() },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      console.error('Image picker initialization error:', error);
+      Alert.alert('Error', 'Failed to open photo picker. Please try again.');
+    }
+  };
+
+  const pickFromCamera = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow camera access to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+          Alert.alert('Image Too Large', 'Please take a smaller photo.');
+          return;
+        }
+        setAvatar(asset.uri);
+      }
+    } catch (error) {
+      console.error('Camera picker error:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
+
+  const pickFromLibrary = async () => {
+    try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (permissionResult.granted === false) {
@@ -111,18 +158,17 @@ export default function CreateCardScreen({ navigation, route }) {
         selectionLimit: 1,
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        // Validate file size (e.g., max 5MB)
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert('Image Too Large', 'Please select an image smaller than 5MB.');
           return;
         }
-        setAvatar(result.assets[0].uri);
+        setAvatar(asset.uri);
       }
     } catch (error) {
+      console.error('Library picker error:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
-      console.error('Image picker error:', error);
     }
   };
 
@@ -310,11 +356,11 @@ export default function CreateCardScreen({ navigation, route }) {
                   style={[
                     styles.colorOption,
                     { backgroundColor: color },
-                    formData.themeColor === color && styles.selectedColor
+                    formData.theme_color === color && styles.selectedColor
                   ]}
-                  onPress={() => updateFormData('themeColor', color)}
+                  onPress={() => updateFormData('theme_color', color)}
                 >
-                  {formData.themeColor === color && (
+                  {formData.theme_color === color && (
                     <Ionicons name="checkmark" size={16} color="#ffffff" />
                   )}
                 </TouchableOpacity>

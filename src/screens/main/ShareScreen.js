@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '../../contexts/AuthContext';
 import { businessCardService } from '../../services/database';
 import QRCodeDisplay from '../../components/cards/QRCodeDisplay';
