@@ -17,6 +17,9 @@ export default function QRCodeDisplay({
   style 
 }) {
   const [qrRef, setQrRef] = useState(null);
+  
+  // Feature flag for save functionality - set to true when save feature is implemented
+  const SAVE_QR_ENABLED = false;
 
   // Generate QR data
   const generateQRData = () => {
@@ -114,13 +117,15 @@ export default function QRCodeDisplay({
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleSaveQR}
-          >
-            <Ionicons name="download-outline" size={20} color="#111827" />
-            <Text style={styles.actionText}>Save QR</Text>
-          </TouchableOpacity>
+          {SAVE_QR_ENABLED && (
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleSaveQR}
+            >
+              <Ionicons name="download-outline" size={20} color="#111827" />
+              <Text style={styles.actionText}>Save QR</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'center',
     marginBottom: 16,
   },
   actionButton: {
@@ -174,7 +179,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    gap: 8,
+    marginHorizontal: 8,
   },
   actionText: {
     fontSize: 14,

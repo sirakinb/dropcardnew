@@ -29,7 +29,7 @@ export default function BusinessCard({
     if (color === '#000000' || color === '#111827') {
       return ['#1F2937', '#111827'];
     }
-    return [color, color + '80']; // Add transparency
+    return [color, tinycolor(color).setAlpha(0.5).toHex8String()]; // Add transparency
   };
 
   return (
@@ -168,12 +168,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   contactInfo: {
-    gap: 8,
+    // Removed gap property for better platform compatibility
   },
   contactItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8, // Added marginBottom instead of using gap
   },
   contactLabel: {
     fontSize: 12,

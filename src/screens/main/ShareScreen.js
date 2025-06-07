@@ -89,9 +89,8 @@ Shared via DropCard
 
   const handleCopyToClipboard = async () => {
     if (!currentCard) return;
-
-    try {
-      const { Clipboard } = await import('expo-clipboard');
+      const Clipboard = await import('expo-clipboard');
+      await Clipboard.setStringAsync(cardText);
       const cardText = `${currentCard.name}\n${currentCard.title || ''}\n${currentCard.company || ''}\n${currentCard.email || ''}\n${currentCard.phone || ''}\n${currentCard.website || ''}`;
       
       await Clipboard.setStringAsync(cardText);
