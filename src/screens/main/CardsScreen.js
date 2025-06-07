@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { cardService } from '../../services/database';
+import { businessCardService } from '../../services/database';
 
 export default function CardsScreen({ navigation }) {
   const [cards, setCards] = useState([]);
@@ -20,7 +20,7 @@ export default function CardsScreen({ navigation }) {
 
   const loadCards = async () => {
     try {
-      const result = await cardService.getUserCards();
+      const result = await businessCardService.getUserCards();
       if (result.error) {
         throw new Error(result.error);
       }
@@ -71,7 +71,7 @@ export default function CardsScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const result = await cardService.deleteCard(card.id);
+              const result = await businessCardService.deleteCard(card.id);
               if (result.error) {
                 throw new Error(result.error);
               }
@@ -89,7 +89,7 @@ export default function CardsScreen({ navigation }) {
 
   const handleSetPrimary = async (card) => {
     try {
-      const result = await cardService.setPrimaryCard(card.id);
+      const result = await businessCardService.setPrimaryCard(card.id);
       if (result.error) {
         throw new Error(result.error);
       }

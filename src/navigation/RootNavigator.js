@@ -12,6 +12,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import CreateCardScreen from '../screens/main/CreateCardScreen';
 import CardDisplayScreen from '../screens/main/CardDisplayScreen';
+import AddContactScreen from '../screens/main/AddContactScreen';
 import MainTabs from './MainTabs';
 
 const Stack = createStackNavigator();
@@ -36,6 +37,7 @@ export default function RootNavigator() {
           <Stack.Screen name="CreateCard" component={CreateCardScreen} />
           <Stack.Screen name="CardDisplay" component={CardDisplayScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="AddContact" component={AddContactScreen} />
         </>
       ) : (
         // User is not signed in - show auth flow

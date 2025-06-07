@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { cardService } from '../../services/database';
+import { businessCardService } from '../../services/database';
 
 export default function CreateCardScreen({ navigation, route }) {
   const { userName, editMode, cardData, avatar: initialAvatar } = route.params || {};
@@ -131,10 +131,10 @@ export default function CreateCardScreen({ navigation, route }) {
       let result;
       if (editMode && cardData?.id) {
         // Update existing card
-        result = await cardService.updateCard(cardData.id, formData);
+        result = await businessCardService.updateCard(cardData.id, formData);
       } else {
         // Create new card
-        result = await cardService.createCard(formData);
+        result = await businessCardService.createCard(formData);
       }
 
       if (result.error) {
