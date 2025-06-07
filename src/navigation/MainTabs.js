@@ -50,9 +50,9 @@ export default function MainTabs() {
         },
       })}
     >
+      <Tab.Screen name="Share" component={ShareScreen} />
       <Tab.Screen name="Cards" component={CardsScreen} />
       <Tab.Screen name="Contacts" component={ContactsScreen} />
-      <Tab.Screen name="Share" component={ShareScreen} />
       <Tab.Screen name="Scan" component={ScanScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

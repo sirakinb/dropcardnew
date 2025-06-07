@@ -10,7 +10,6 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// import * as Clipboard from 'expo-clipboard'; // Temporarily disabled - requires dev client rebuild
 import { useAuth } from '../../contexts/AuthContext';
 import { businessCardService } from '../../services/database';
 import QRCodeDisplay from '../../components/cards/QRCodeDisplay';
@@ -88,24 +87,6 @@ Shared via DropCard
     }
   };
 
-  const handleCopyToClipboard = async () => {
-    try {
-      // Temporarily disabled - requires development client rebuild for expo-clipboard
-      Alert.alert(
-        'Copy Feature Temporarily Disabled', 
-        'The copy to clipboard feature requires a development client rebuild. Use the Share button instead to share your card information.'
-      );
-      
-      // Original clipboard code (will be restored after dev client rebuild):
-      // const cardText = `${currentCard.name}\\n${currentCard.title}\\n${currentCard.company}\\n${currentCard.email}\\n${currentCard.phone}`;
-      // await Clipboard.setStringAsync(cardText);
-      // Alert.alert('Copied!', 'Card information copied to clipboard.');
-    } catch (error) {
-      console.error('Copy error:', error);
-      Alert.alert('Error', 'Failed to copy card information.');
-    }
-  };
-
   const handleEmailShare = () => {
     if (!currentCard?.email) {
       Alert.alert('No Email', 'This card doesn\'t have an email address.');
@@ -119,17 +100,6 @@ Shared via DropCard
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Email', onPress: () => console.log('Open email app') }
-      ]
-    );
-  };
-
-  const handleSocialShare = (platform) => {
-    Alert.alert(
-      `Share on ${platform}`,
-      `This will open ${platform} to share your business card.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', onPress: () => console.log(`Share on ${platform}`) }
       ]
     );
   };
@@ -209,17 +179,6 @@ Shared via DropCard
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.shareOption} onPress={handleCopyToClipboard}>
-            <View style={styles.shareIconContainer}>
-              <Ionicons name="copy-outline" size={24} color="#111827" />
-            </View>
-            <View style={styles.shareTextContainer}>
-              <Text style={styles.shareTitle}>Copy to Clipboard</Text>
-              <Text style={styles.shareDescription}>Copy card information as text</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.shareOption} onPress={handleEmailShare}>
             <View style={styles.shareIconContainer}>
               <Ionicons name="mail-outline" size={24} color="#111827" />
@@ -230,36 +189,6 @@ Shared via DropCard
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
-        </View>
-
-        {/* Social Sharing */}
-        <View style={styles.socialSection}>
-          <Text style={styles.sectionTitle}>Social Media</Text>
-          <View style={styles.socialButtons}>
-            <TouchableOpacity 
-              style={styles.socialButton}
-              onPress={() => handleSocialShare('LinkedIn')}
-            >
-              <Ionicons name="logo-linkedin" size={24} color="#0A66C2" />
-              <Text style={styles.socialText}>LinkedIn</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.socialButton}
-              onPress={() => handleSocialShare('Twitter')}
-            >
-              <Ionicons name="logo-twitter" size={24} color="#1DA1F2" />
-              <Text style={styles.socialText}>Twitter</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.socialButton}
-              onPress={() => handleSocialShare('Instagram')}
-            >
-              <Ionicons name="logo-instagram" size={24} color="#E4405F" />
-              <Text style={styles.socialText}>Instagram</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -380,25 +309,5 @@ const styles = StyleSheet.create({
   shareDescription: {
     fontSize: 14,
     color: '#6B7280',
-  },
-  socialSection: {
-    alignItems: 'center',
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  socialButton: {
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    minWidth: 80,
-  },
-  socialText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 8,
-    fontWeight: '500',
   },
 }); 

@@ -24,7 +24,9 @@ export default function SettingsScreen({ navigation }) {
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Unable to load settings. Please try again.</Text>
+          <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>Unable to load settings</Text>
+          <Text style={styles.errorSubtext}>AuthContext is not available. Please restart the app.</Text>
           <TouchableOpacity 
             style={styles.retryButton} 
             onPress={() => navigation.goBack()}
@@ -62,6 +64,7 @@ export default function SettingsScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Don't crash on error, just continue without profile data
     } finally {
       setLoading(false);
     }
@@ -72,10 +75,11 @@ export default function SettingsScreen({ navigation }) {
       const savedPreferences = await AsyncStorage.getItem('userPreferences');
       if (savedPreferences) {
         const parsedPreferences = JSON.parse(savedPreferences);
-        setPreferences({ ...preferences, ...parsedPreferences });
+        setPreferences(currentPrefs => ({ ...currentPrefs, ...parsedPreferences }));
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
+      // Continue with default preferences on error
     }
   };
 
@@ -84,6 +88,7 @@ export default function SettingsScreen({ navigation }) {
       await AsyncStorage.setItem('userPreferences', JSON.stringify(newPreferences));
     } catch (error) {
       console.error('Error saving preferences:', error);
+      Alert.alert('Error', 'Failed to save preferences. Please try again.');
     }
   };
 
@@ -98,10 +103,27 @@ export default function SettingsScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await signOut();
+              if (signOut && typeof signOut === 'function') {
+                await signOut();
+              } else {
+                throw new Error('Sign out function not available');
+              }
             } catch (error) {
               console.error('Error signing out:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
+              Alert.alert(
+                'Error', 
+                'Failed to sign out. Please try restarting the app.',
+                [
+                  { text: 'OK' },
+                  { 
+                    text: 'Restart App', 
+                    onPress: () => {
+                      // In development, user needs to manually restart
+                      Alert.alert('Please restart the app manually');
+                    }
+                  }
+                ]
+              );
             }
           },
         },
@@ -185,12 +207,6 @@ export default function SettingsScreen({ navigation }) {
         {/* Profile Section */}
         <SettingSection title="Profile">
           <SettingItem
-            icon="person-outline"
-            title={profile?.full_name || user?.email || 'User'}
-            subtitle={user?.email}
-            onPress={handleEditProfile}
-          />
-          <SettingItem
             icon="card-outline"
             title="My Business Cards"
             subtitle="Manage your digital cards"
@@ -209,42 +225,14 @@ export default function SettingsScreen({ navigation }) {
           <SettingItem
             icon="notifications-outline"
             title="Notifications"
-            subtitle="Contact requests and updates"
-            rightElement={
-              <Switch
-                value={preferences.notifications}
-                onValueChange={() => togglePreference('notifications')}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor={preferences.notifications ? '#ffffff' : '#ffffff'}
-              />
-            }
-            showChevron={false}
-          />
-          <SettingItem
-            icon="moon-outline"
-            title="Dark Mode"
             subtitle="Coming soon"
             rightElement={
               <Switch
-                value={preferences.darkMode}
-                onValueChange={() => togglePreference('darkMode')}
+                value={false}
+                onValueChange={() => {}}
                 disabled={true}
                 trackColor={{ false: '#E5E7EB', true: '#000000' }}
                 thumbColor="#ffffff"
-              />
-            }
-            showChevron={false}
-          />
-          <SettingItem
-            icon="cloud-upload-outline"
-            title="Auto Backup"
-            subtitle="Automatically backup your data"
-            rightElement={
-              <Switch
-                value={preferences.autoBackup}
-                onValueChange={() => togglePreference('autoBackup')}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor={preferences.autoBackup ? '#ffffff' : '#ffffff'}
               />
             }
             showChevron={false}
@@ -258,20 +246,6 @@ export default function SettingsScreen({ navigation }) {
             title="Export Data"
             subtitle="Download your information"
             onPress={() => Alert.alert('Feature Coming Soon', 'Data export will be available in a future update.')}
-          />
-          <SettingItem
-            icon="analytics-outline"
-            title="Analytics"
-            subtitle="Help improve the app"
-            rightElement={
-              <Switch
-                value={preferences.analytics}
-                onValueChange={() => togglePreference('analytics')}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor={preferences.analytics ? '#ffffff' : '#ffffff'}
-              />
-            }
-            showChevron={false}
           />
           <SettingItem
             icon="shield-checkmark-outline"
@@ -429,6 +403,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#EF4444',
+    marginBottom: 20,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
     marginBottom: 20,
   },
   retryButton: {

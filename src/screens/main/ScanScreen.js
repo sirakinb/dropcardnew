@@ -101,18 +101,58 @@ export default function ScanScreen({ navigation }) {
     const vCard = {};
     
     lines.forEach(line => {
-      if (line.startsWith('FN:')) {
-        vCard.name = line.substring(3);
-      } else if (line.startsWith('EMAIL:')) {
-        vCard.email = line.substring(6);
-      } else if (line.startsWith('TEL:')) {
-        vCard.phone = line.substring(4);
-      } else if (line.startsWith('ORG:')) {
-        vCard.company = line.substring(4);
-      } else if (line.startsWith('TITLE:')) {
-        vCard.title = line.substring(6);
-      } else if (line.startsWith('URL:')) {
-        vCard.website = line.substring(4);
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.startsWith('FN:')) {
+        vCard.name = trimmedLine.substring(3);
+      } else if (trimmedLine.startsWith('EMAIL:')) {
+        vCard.email = trimmedLine.substring(6);
+      } else if (trimmedLine.startsWith('TEL:')) {
+        vCard.phone = trimmedLine.substring(4);
+      } else if (trimmedLine.startsWith('ORG:')) {
+        vCard.company = trimmedLine.substring(4);
+      } else if (trimmedLine.startsWith('TITLE:')) {
+        vCard.title = trimmedLine.substring(6);
+      } else if (trimmedLine.startsWith('URL:')) {
+        vCard.website = trimmedLine.substring(4);
+      } else if (trimmedLine.startsWith('ADR:')) {
+        // Address format: ;;street;city;state;zip;country
+        const addressParts = trimmedLine.substring(4).split(';');
+        const addressComponents = [];
+        if (addressParts[2]) addressComponents.push(addressParts[2]); // street
+        if (addressParts[3]) addressComponents.push(addressParts[3]); // city
+        if (addressParts[4]) addressComponents.push(addressParts[4]); // state
+        if (addressParts[5]) addressComponents.push(addressParts[5]); // zip
+        if (addressParts[6]) addressComponents.push(addressParts[6]); // country
+        
+        if (addressComponents.length > 0) {
+          vCard.address = addressComponents.join(', ');
+        }
+      } else if (trimmedLine.startsWith('NOTE:')) {
+        vCard.notes = trimmedLine.substring(5);
+      } else if (trimmedLine.startsWith('ROLE:')) {
+        vCard.role = trimmedLine.substring(5);
+      } else if (trimmedLine.includes('TYPE=WORK') && trimmedLine.includes('TEL:')) {
+        vCard.workPhone = trimmedLine.substring(trimmedLine.indexOf('TEL:') + 4);
+      } else if (trimmedLine.includes('TYPE=HOME') && trimmedLine.includes('TEL:')) {
+        vCard.homePhone = trimmedLine.substring(trimmedLine.indexOf('TEL:') + 4);
+      } else if (trimmedLine.includes('TYPE=FAX') && trimmedLine.includes('TEL:')) {
+        vCard.fax = trimmedLine.substring(trimmedLine.indexOf('TEL:') + 4);
+      } else if (trimmedLine.includes('X-SOCIALPROFILE')) {
+        // Handle social media profiles
+        if (trimmedLine.includes('linkedin')) {
+          vCard.linkedin = trimmedLine.substring(trimmedLine.indexOf('http'));
+        } else if (trimmedLine.includes('twitter')) {
+          vCard.twitter = trimmedLine.substring(trimmedLine.indexOf('http'));
+        }
+      } else if (trimmedLine.startsWith('X-') && trimmedLine.includes(':')) {
+        // Handle custom X- fields
+        const colonIndex = trimmedLine.indexOf(':');
+        const fieldName = trimmedLine.substring(2, colonIndex).toLowerCase().replace(/-/g, '');
+        const fieldValue = trimmedLine.substring(colonIndex + 1);
+        if (fieldValue) {
+          vCard[fieldName] = fieldValue;
+        }
       }
     });
 
@@ -139,18 +179,43 @@ export default function ScanScreen({ navigation }) {
     try {
       setSaving(true);
       
+      // Standard contact fields that map to database schema
+      const standardFields = ['name', 'email', 'phone', 'company', 'title'];
+      
+      // Extract standard fields
       const contactData = {
         name: scannedData.name || scannedData.raw || 'Unknown Contact',
         email: scannedData.email || '',
         phone: scannedData.phone || '',
         company: scannedData.company || '',
         title: scannedData.title || '',
-        website: scannedData.website || '',
-        notes: `Added via QR scan on ${new Date().toLocaleDateString()}`,
         tags: ['scanned']
       };
 
+      // Find any additional fields that aren't in the standard schema
+      const additionalFields = {};
+      Object.keys(scannedData).forEach(key => {
+        if (!standardFields.includes(key) && key !== 'raw' && scannedData[key]) {
+          additionalFields[key] = scannedData[key];
+        }
+      });
+
+      // Create notes with scan info and any additional data
+      let notes = `Added via QR scan on ${new Date().toLocaleDateString()}`;
+      
+      if (Object.keys(additionalFields).length > 0) {
+        notes += '\n\nAdditional Information:';
+        Object.entries(additionalFields).forEach(([key, value]) => {
+          const fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+          notes += `\n• ${fieldName}: ${value}`;
+        });
+      }
+
+      contactData.notes = notes;
+
       console.log('Creating contact with data:', contactData);
+      console.log('Additional fields found:', additionalFields);
+      
       const result = await contactService.createContact(contactData);
       
       if (result.error) {
@@ -159,7 +224,7 @@ export default function ScanScreen({ navigation }) {
 
       Alert.alert(
         'Contact Added!',
-        `${contactData.name} has been added to your contacts.`,
+        `${contactData.name} has been added to your contacts.${Object.keys(additionalFields).length > 0 ? '\n\nAdditional information has been saved in the notes section.' : ''}`,
         [
           { 
             text: 'View Contacts', 
@@ -313,13 +378,53 @@ export default function ScanScreen({ navigation }) {
                       <Text style={styles.cardDetailText}>{scannedData.phone}</Text>
                     </View>
                   )}
-                  {scannedData.website && (
-                    <View style={styles.cardDetailItem}>
-                      <Ionicons name="globe-outline" size={16} color="#6B7280" />
-                      <Text style={styles.cardDetailText}>{scannedData.website}</Text>
-                    </View>
-                  )}
+                  
+                  {/* Display all additional fields dynamically */}
+                  {Object.entries(scannedData).map(([key, value]) => {
+                    // Skip standard fields and empty values
+                    if (['name', 'email', 'phone', 'company', 'title', 'raw'].includes(key) || !value) {
+                      return null;
+                    }
+                    
+                    // Choose appropriate icon based on field name
+                    let iconName = 'information-circle-outline';
+                    if (key.toLowerCase().includes('website') || key.toLowerCase().includes('url')) {
+                      iconName = 'globe-outline';
+                    } else if (key.toLowerCase().includes('address')) {
+                      iconName = 'location-outline';
+                    } else if (key.toLowerCase().includes('social') || key.toLowerCase().includes('linkedin') || key.toLowerCase().includes('twitter')) {
+                      iconName = 'logo-linkedin';
+                    } else if (key.toLowerCase().includes('fax')) {
+                      iconName = 'print-outline';
+                    } else if (key.toLowerCase().includes('department')) {
+                      iconName = 'business-outline';
+                    }
+                    
+                    const fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                    
+                    return (
+                      <View key={key} style={styles.cardDetailItem}>
+                        <Ionicons name={iconName} size={16} color="#6B7280" />
+                        <View style={styles.cardDetailContent}>
+                          <Text style={styles.cardDetailLabel}>{fieldName}:</Text>
+                          <Text style={styles.cardDetailText}>{value}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
+                
+                {/* Show info about additional fields */}
+                {Object.keys(scannedData).filter(key => 
+                  !['name', 'email', 'phone', 'company', 'title', 'raw'].includes(key) && scannedData[key]
+                ).length > 0 && (
+                  <View style={styles.additionalFieldsInfo}>
+                    <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+                    <Text style={styles.additionalFieldsText}>
+                      Additional information will be saved in the notes section
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           </ScrollView>
@@ -609,5 +714,28 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  websiteNote: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'right',
+  },
+  additionalFieldsInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+  },
+  additionalFieldsText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  cardDetailContent: {
+    flexDirection: 'column',
+  },
+  cardDetailLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
   },
 }); 

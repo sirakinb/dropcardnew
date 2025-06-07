@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../contexts/AuthContext';
 import { businessCardService } from '../../services/database';
 
 export default function CreateCardScreen({ navigation, route }) {
+  const { user } = useAuth();
   const { userName, editMode, cardData, avatar: initialAvatar } = route.params || {};
   
   const [formData, setFormData] = useState({
@@ -27,7 +30,7 @@ export default function CreateCardScreen({ navigation, route }) {
     theme_color: cardData?.theme_color || '#000000',
   });
   const [errors, setErrors] = useState({});
-  const [avatar, setAvatar] = useState(initialAvatar || null);
+  const [avatar, setAvatar] = useState(initialAvatar || cardData?.avatar_url || null);
   const [loading, setLoading] = useState(false);
 
   // Available theme colors
@@ -248,17 +251,34 @@ export default function CreateCardScreen({ navigation, route }) {
     try {
       setLoading(true);
       
+      // Include avatar in the card data
+      const cardDataToSave = {
+        ...formData,
+        avatar_url: avatar // Include the avatar URL in the saved data
+      };
+      
       let result;
       if (editMode && cardData?.id) {
         // Update existing card
-        result = await businessCardService.updateCard(cardData.id, formData);
+        result = await businessCardService.updateCard(cardData.id, cardDataToSave);
       } else {
         // Create new card
-        result = await businessCardService.createCard(formData);
+        result = await businessCardService.createCard(cardDataToSave);
       }
 
       if (result.error) {
         throw new Error(result.error);
+      }
+
+      // If this is a new card (not edit mode) and we came from onboarding,
+      // mark onboarding as completed
+      if (!editMode && userName && user) {
+        try {
+          await AsyncStorage.setItem(`onboarding_completed_${user.id}`, 'true');
+          console.log('Onboarding marked as completed for user:', user.id);
+        } catch (error) {
+          console.error('Error marking onboarding as completed:', error);
+        }
       }
 
       Alert.alert(

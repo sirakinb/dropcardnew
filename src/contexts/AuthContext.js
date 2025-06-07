@@ -3,6 +3,9 @@ import { supabase } from '../config/supabase';
 
 const AuthContext = createContext({});
 
+// Export AuthContext for direct use
+export { AuthContext };
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

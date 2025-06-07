@@ -9,6 +9,7 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +26,7 @@ export default function ContactsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
+  const [showAIModal, setShowAIModal] = useState(false);
 
   const loadContacts = useCallback(async () => {
     // Don't try to load contacts if auth is still loading or user is not authenticated
@@ -168,6 +170,14 @@ export default function ContactsScreen({ navigation }) {
     }
   };
 
+  const handleAIButtonPress = () => {
+    setShowAIModal(true);
+  };
+
+  const closeAIModal = () => {
+    setShowAIModal(false);
+  };
+
   const renderContact = ({ item: contact }) => (
     <ContactCard
       contact={contact}
@@ -235,10 +245,21 @@ export default function ContactsScreen({ navigation }) {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Contacts</Text>
-        <Text style={styles.subtitle}>
-          {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
-        </Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Contacts</Text>
+            <Text style={styles.subtitle}>
+              {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.aiButton}
+            onPress={handleAIButtonPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.aiButtonText}>AI</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search Bar */}
@@ -300,6 +321,35 @@ export default function ContactsScreen({ navigation }) {
       >
         <Ionicons name="add" size={24} color="#ffffff" />
       </TouchableOpacity>
+
+      {/* AI Coming Soon Modal */}
+      <Modal
+        visible={showAIModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeAIModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.aiModalIcon}>
+                <Text style={styles.aiModalIconText}>AI</Text>
+              </View>
+              <Text style={styles.modalTitle}>AI Features</Text>
+            </View>
+            <Text style={styles.modalMessage}>
+              Coming soon! AI-powered contact insights and smart suggestions will be available in a future update.
+            </Text>
+            <TouchableOpacity 
+              style={styles.modalButton}
+              onPress={closeAIModal}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -324,6 +374,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: '#ffffff',
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flexDirection: 'column',
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -333,6 +391,28 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
+  },
+  aiButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#7C3AED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#7C3AED',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  aiButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    letterSpacing: 0.5,
   },
   searchContainer: {
     paddingHorizontal: 24,
@@ -435,5 +515,58 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 16,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  aiModalIcon: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  aiModalIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: '#111827',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

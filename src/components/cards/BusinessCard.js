@@ -20,8 +20,12 @@ export default function BusinessCard({
     company = '',
     email = '',
     phone = '',
-    website = ''
+    website = '',
+    avatar_url = ''
   } = cardData || {};
+
+  // Use avatar prop first, then fallback to avatar_url from cardData
+  const displayAvatar = avatar || avatar_url;
 
   // Generate gradient colors based on theme
   const getGradientColors = (color) => {
@@ -55,9 +59,9 @@ export default function BusinessCard({
       >
         {/* Header Section */}
         <View style={styles.header}>
-          {avatar && (
+          {displayAvatar && (
             <Image 
-              source={{ uri: avatar }} 
+              source={{ uri: displayAvatar }} 
               style={[styles.avatar, compact && styles.compactAvatar]}
             />
           )}
