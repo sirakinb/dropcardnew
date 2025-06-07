@@ -244,6 +244,68 @@ export default function AddContactScreen({ navigation, route }) {
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Contact',
+      `Are you sure you want to delete "${formData.name}"? This action cannot be undone.`,
+      [
+        { 
+          text: 'Cancel', 
+          style: 'cancel' 
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const result = await contactService.deleteContact(contactData.id);
+              if (result.error) {
+                throw new Error(result.error);
+              }
+              
+              Alert.alert(
+                'Contact Deleted',
+                'Contact has been deleted successfully',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Navigate back to the main contacts screen
+                      // Use reset to clear the navigation stack and go to Contacts
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Contacts' }],
+                      });
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error deleting contact:', error);
+              Alert.alert(
+                'Error',
+                'Failed to delete contact. Please try again.',
+                [
+                  {
+                    text: 'Try Again',
+                    onPress: () => handleDelete()
+                  },
+                  {
+                    text: 'Cancel',
+                    style: 'cancel'
+                  }
+                ]
+              );
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const renderFormField = (label, field, placeholder, options = {}) => (
     <View style={styles.fieldContainer}>
       <Text style={styles.label}>
@@ -373,6 +435,20 @@ export default function AddContactScreen({ navigation, route }) {
             Tags help organize and filter your contacts
           </Text>
         </View>
+
+        {/* Delete Button - Only show in edit mode */}
+        {editMode && (
+          <View style={styles.deleteSection}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDelete}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ffffff" />
+              <Text style={styles.deleteButtonText}>Delete Contact</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
@@ -514,5 +590,28 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  deleteSection: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  deleteButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

@@ -6,9 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
-export default function ContactCard({ contact, onPress, onEdit, onDelete }) {
+export default function ContactCard({ contact, onPress }) {
   // Generate initials from contact name
   const getInitials = (name) => {
     // Check if name is undefined, null, not a string, or empty/whitespace only
@@ -74,96 +73,91 @@ export default function ContactCard({ contact, onPress, onEdit, onDelete }) {
       onPress={() => onPress && onPress(contact)}
       activeOpacity={0.7}
     >
-      {/* Main Contact Info */}
-      <View style={styles.content}>
-        {/* Avatar */}
-        <View style={[styles.avatar, { backgroundColor: getAvatarColor(contact.name) }]}>
-          <Text style={styles.avatarText}>{getInitials(contact.name)}</Text>
-        </View>
-
-        {/* Contact Details */}
-        <View style={styles.details}>
-          <Text style={styles.name} numberOfLines={1}>
-            {contact.name}
-          </Text>
-          
-          {contact.title && contact.company ? (
-            <Text style={styles.position} numberOfLines={1}>
-              {contact.title} at {contact.company}
-            </Text>
-          ) : contact.title ? (
-            <Text style={styles.position} numberOfLines={1}>
-              {contact.title}
-            </Text>
-          ) : contact.company ? (
-            <Text style={styles.position} numberOfLines={1}>
-              {contact.company}
-            </Text>
-          ) : null}
-
-          {contact.email && (
-            <Text style={styles.email} numberOfLines={1}>
-              {contact.email}
-            </Text>
-          )}
-
-          {contact.phone && (
-            <Text style={styles.phone} numberOfLines={1}>
-              {contact.phone}
-            </Text>
-          )}
-
-          {/* Tags */}
-          {contact.tags && contact.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {contact.tags.slice(0, 2).map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                </View>
-              ))}
-              {contact.tags.length > 2 && (
-                <View style={styles.moreTagsIndicator}>
-                  <Text style={styles.moreTagsText}>+{contact.tags.length - 2}</Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Notes Preview */}
-          {contact.notes && (
-            <Text style={styles.notes} numberOfLines={2}>
-              {contact.notes}
-            </Text>
-          )}
-
-          {/* Last Contact */}
-          <Text style={styles.lastContact}>
-            Met: {formatLastContact(contact.met_at)}
-          </Text>
-        </View>
+      {/* Avatar */}
+      <View style={[styles.avatar, { backgroundColor: getAvatarColor(contact.name) }]}>
+        <Text style={styles.avatarText}>{getInitials(contact.name)}</Text>
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(event) => {
-            event.stopPropagation();
-            onEdit && onEdit(contact);
-          }}
-        >
-          <Ionicons name="create-outline" size={20} color="#6B7280" />
-        </TouchableOpacity>
+      {/* Contact Details */}
+      <View style={styles.details}>
+        <Text style={styles.name} numberOfLines={1}>
+          {contact.name}
+        </Text>
         
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(event) => {
-            event.stopPropagation();
-            onDelete && onDelete(contact);
-          }}
-        >
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-        </TouchableOpacity>
+        {contact.title && contact.company ? (
+          <Text style={styles.position} numberOfLines={1}>
+            {contact.title} at {contact.company}
+          </Text>
+        ) : contact.title ? (
+          <Text style={styles.position} numberOfLines={1}>
+            {contact.title}
+          </Text>
+        ) : contact.company ? (
+          <Text style={styles.position} numberOfLines={1}>
+            {contact.company}
+          </Text>
+        ) : null}
+
+        {contact.email && (
+          <Text style={styles.email} numberOfLines={1}>
+            {contact.email}
+          </Text>
+        )}
+
+        {contact.phone && (
+          <Text style={styles.phone} numberOfLines={1}>
+            {contact.phone}
+          </Text>
+        )}
+
+        {/* Website if available */}
+        {contact.website && (
+          <Text style={styles.website} numberOfLines={1}>
+            🌐 {contact.website}
+          </Text>
+        )}
+
+        {/* Tags */}
+        {contact.tags && contact.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {contact.tags.slice(0, 3).map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+            {contact.tags.length > 3 && (
+              <View style={styles.moreTagsIndicator}>
+                <Text style={styles.moreTagsText}>+{contact.tags.length - 3}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Notes Preview - Show more lines */}
+        {contact.notes && (
+          <Text style={styles.notes} numberOfLines={3}>
+            💭 {contact.notes}
+          </Text>
+        )}
+
+        {/* Contact Context/Additional Info */}
+        {contact.context && (
+          <Text style={styles.context} numberOfLines={2}>
+            📝 {contact.context}
+          </Text>
+        )}
+
+        {/* Last Contact */}
+        <Text style={styles.lastContact}>
+          Met: {formatLastContact(contact.met_at)}
+        </Text>
+
+        {/* Additional metadata if available */}
+        {contact.location && (
+          <Text style={styles.metadata} numberOfLines={1}>
+            📍 {contact.location}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -185,10 +179,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-  },
-  content: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    position: 'relative',
+    minHeight: 120,
   },
   avatar: {
     width: 48,
@@ -205,7 +199,7 @@ const styles = StyleSheet.create({
   },
   details: {
     flex: 1,
-    marginRight: 8,
+    paddingRight: 8,
   },
   name: {
     fontSize: 16,
@@ -227,6 +221,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 8,
+  },
+  website: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -263,23 +262,20 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 18,
   },
+  context: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginBottom: 6,
+    lineHeight: 18,
+  },
   lastContact: {
     fontSize: 12,
     color: '#9CA3AF',
   },
-  actions: {
-    flexDirection: 'column',
-    gap: 8,
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F9FAFB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  metadata: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
 });
 
@@ -300,17 +296,16 @@ ContactCard.propTypes = {
     updated_at: PropTypes.string,
     user_id: PropTypes.string,
     voice_note_url: PropTypes.string,
+    website: PropTypes.string,
+    context: PropTypes.string,
+    location: PropTypes.string,
   }).isRequired,
   
   // Optional callback functions
   onPress: PropTypes.func,
-  onEdit: PropTypes.func,
-  onDelete: PropTypes.func,
 };
 
 // Default props for optional callbacks
 ContactCard.defaultProps = {
   onPress: null,
-  onEdit: null,
-  onDelete: null,
 };

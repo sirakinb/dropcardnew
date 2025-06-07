@@ -8,6 +8,7 @@ import {
   Alert,
   Share,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -87,21 +88,37 @@ Shared via DropCard
     }
   };
 
-  const handleEmailShare = () => {
-    if (!currentCard?.email) {
-      Alert.alert('No Email', 'This card doesn\'t have an email address.');
+  const handleEmailShare = async () => {
+    if (!currentCard) {
+      Alert.alert('No Card', 'No business card available to share.');
       return;
     }
 
-    // This would typically open the email app
-    Alert.alert(
-      'Email Share',
-      'This will open your email app to share the card.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Email', onPress: () => console.log('Open email app') }
-      ]
-    );
+    try {
+      const subject = encodeURIComponent(`${currentCard.name}'s Business Card`);
+      const body = encodeURIComponent(`
+📱 ${currentCard.name}
+${currentCard.title ? `💼 ${currentCard.title}` : ''}
+${currentCard.company ? `🏢 ${currentCard.company}` : ''}
+${currentCard.email ? `📧 ${currentCard.email}` : ''}
+${currentCard.phone ? `📞 ${currentCard.phone}` : ''}
+${currentCard.website ? `🌐 ${currentCard.website}` : ''}
+
+Shared via DropCard
+      `.trim());
+
+      const emailUrl = `mailto:?subject=${subject}&body=${body}`;
+      
+      const canOpen = await Linking.canOpenURL(emailUrl);
+      if (canOpen) {
+        await Linking.openURL(emailUrl);
+      } else {
+        Alert.alert('Error', 'Unable to open email app. Please check if you have an email app installed.');
+      }
+    } catch (error) {
+      console.error('Email share error:', error);
+      Alert.alert('Error', 'Failed to open email app. Please try again.');
+    }
   };
 
   if (loading) {

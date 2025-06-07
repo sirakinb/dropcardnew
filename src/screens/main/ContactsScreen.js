@@ -109,42 +109,8 @@ export default function ContactsScreen({ navigation }) {
   }, [searchQuery, selectedTags, contacts]);
 
   const handleContactPress = (contact) => {
-    // Navigate to contact detail view (will implement later)
-    console.log('Contact pressed:', contact.name);
-  };
-
-  const handleEditContact = (contact) => {
-    navigation.navigate('AddContact', {
-      editMode: true,
-      contactData: contact
-    });
-  };
-
-  const handleDeleteContact = (contact) => {
-    Alert.alert(
-      'Delete Contact',
-      `Are you sure you want to delete "${contact.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const result = await contactService.deleteContact(contact.id);
-              if (result.error) {
-                throw new Error(result.error);
-              }
-              await loadContacts(); // Refresh the list
-              Alert.alert('Success', 'Contact deleted successfully');
-            } catch (error) {
-              console.error('Error deleting contact:', error);
-              Alert.alert('Error', 'Failed to delete contact. Please try again.');
-            }
-          }
-        }
-      ]
-    );
+    // Navigate to contact detail view
+    navigation.navigate('ContactDetail', { contact });
   };
 
   const toggleTagFilter = (tag) => {
@@ -182,8 +148,6 @@ export default function ContactsScreen({ navigation }) {
     <ContactCard
       contact={contact}
       onPress={handleContactPress}
-      onEdit={handleEditContact}
-      onDelete={handleDeleteContact}
     />
   );
 

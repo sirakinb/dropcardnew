@@ -296,8 +296,7 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Made with ❤️ for digital networking</Text>
-          <Text style={styles.footerSubtext}>© 2024 DropCard. All rights reserved.</Text>
+          <Text style={styles.footerSubtext}>© 2025 Pentridge Labs. All rights reserved.</Text>
         </View>
       </ScrollView>
     </View>
@@ -384,11 +383,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     marginTop: 16,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
   },
   footerSubtext: {
     fontSize: 12,
