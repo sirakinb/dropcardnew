@@ -9,65 +9,138 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { CameraView } from 'expo-camera';
-import { useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { contactService } from '../../services/database';
+
+// Try to import camera, but handle gracefully if not available
+let CameraView, useCameraPermissions;
+try {
+  const cameraModule = require('expo-camera');
+  CameraView = cameraModule.CameraView;
+  useCameraPermissions = cameraModule.useCameraPermissions;
+} catch (error) {
+  console.warn('expo-camera not available in this build');
+  CameraView = null;
+  useCameraPermissions = null;
+}
+
+// Import contact service with error handling
+let contactService;
+try {
+  const dbModule = require('../../services/database');
+  contactService = dbModule.contactService;
+  
+  // Verify the service is properly exported
+  if (!contactService || typeof contactService.createContact !== 'function') {
+    console.error('contactService is not properly exported or missing createContact method');
+    contactService = null;
+  }
+} catch (error) {
+  console.error('Error importing database service:', error);
+  contactService = null;
+}
 
 export default function ScanScreen({ navigation }) {
-  const [permission, requestPermission] = useCameraPermissions();
+  // If camera is not available, show error
+  if (!CameraView || !useCameraPermissions) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View style={styles.errorContainer}>
+          <Ionicons name="camera-outline" size={64} color="#9CA3AF" />
+          <Text style={styles.errorTitle}>Camera Not Available</Text>
+          <Text style={styles.errorMessage}>
+            Camera functionality requires a development build with expo-camera included.
+          </Text>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
-  useEffect(() => {
-    if (!permission) {
-      requestPermission();
-    }
-  }, [permission]);  const [scanned, setScanned] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleBarCodeScanned = ({ type, data }) => {
-    if (scanned) return;
-    
     setScanned(true);
-    console.log('QR Code scanned:', { type, data });
     
     try {
-      // Try to parse the QR code data as JSON (business card format)
-      const cardData = JSON.parse(data);
-      
-      // Validate that it's a business card
-      if (cardData.name || cardData.email) {
-        setScannedData(cardData);
-        setShowPreview(true);
-      } else {
-        Alert.alert(
-          'Invalid QR Code',
-          'This QR code does not contain valid business card information.',
-          [{ text: 'Try Again', onPress: () => setScanned(false) }]
-        );
+      // Try to parse QR code data
+      let parsedData;
+      try {
+        parsedData = JSON.parse(data);
+      } catch (parseError) {
+        // If not JSON, try to extract vCard or other format
+        parsedData = parseVCard(data) || { raw: data };
       }
+      
+      console.log('Scanned data:', parsedData);
+      setScannedData(parsedData);
+      setShowPreview(true);
     } catch (error) {
-      // If it's not JSON, treat it as a simple text/URL
-      Alert.alert(
-        'QR Code Scanned',
-        `Content: ${data}`,
-        [
-          { text: 'Try Again', onPress: () => setScanned(false) },
-          { text: 'OK', onPress: () => setScanned(false) }
-        ]
-      );
+      console.error('Error processing scanned data:', error);
+      Alert.alert('Scan Error', 'Unable to process the scanned QR code.');
+      setScanned(false);
     }
   };
 
+  const parseVCard = (data) => {
+    // Simple vCard parser for common fields
+    if (!data.includes('BEGIN:VCARD')) {
+      return null;
+    }
+
+    const lines = data.split('\n');
+    const vCard = {};
+    
+    lines.forEach(line => {
+      if (line.startsWith('FN:')) {
+        vCard.name = line.substring(3);
+      } else if (line.startsWith('EMAIL:')) {
+        vCard.email = line.substring(6);
+      } else if (line.startsWith('TEL:')) {
+        vCard.phone = line.substring(4);
+      } else if (line.startsWith('ORG:')) {
+        vCard.company = line.substring(4);
+      } else if (line.startsWith('TITLE:')) {
+        vCard.title = line.substring(6);
+      } else if (line.startsWith('URL:')) {
+        vCard.website = line.substring(4);
+      }
+    });
+
+    return Object.keys(vCard).length > 0 ? vCard : null;
+  };
+
   const addToContacts = async () => {
-    if (!scannedData) return;
+    if (!scannedData) {
+      Alert.alert('Error', 'No contact data to save.');
+      return;
+    }
+
+    if (!contactService) {
+      Alert.alert(
+        'Service Unavailable',
+        'Contact service is not available. Please restart the app and try again.',
+        [
+          { text: 'OK', onPress: () => setShowPreview(false) }
+        ]
+      );
+      return;
+    }
     
     try {
       setSaving(true);
       
       const contactData = {
-        name: scannedData.name || 'Unknown',
+        name: scannedData.name || scannedData.raw || 'Unknown Contact',
         email: scannedData.email || '',
         phone: scannedData.phone || '',
         company: scannedData.company || '',
@@ -77,6 +150,7 @@ export default function ScanScreen({ navigation }) {
         tags: ['scanned']
       };
 
+      console.log('Creating contact with data:', contactData);
       const result = await contactService.createContact(contactData);
       
       if (result.error) {
@@ -108,7 +182,10 @@ export default function ScanScreen({ navigation }) {
       );
     } catch (error) {
       console.error('Error adding contact:', error);
-      Alert.alert('Error', 'Failed to add contact. Please try again.');
+      Alert.alert(
+        'Error', 
+        `Failed to add contact: ${error.message || 'Unknown error'}. Please try again.`
+      );
     } finally {
       setSaving(false);
     }
@@ -497,6 +574,38 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#ffffff',
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  backButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  backButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',

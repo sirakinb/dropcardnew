@@ -18,7 +18,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "DropCard needs access to your photo library to upload profile pictures for your business cards.",
-        "NSCameraUsageDescription": "DropCard needs access to your camera to take profile pictures for your business cards."
+        "NSCameraUsageDescription": "DropCard needs access to your camera to scan QR codes for importing business cards and to take profile pictures for your business cards."
       }
     },
     "android": {

@@ -15,7 +15,28 @@ import { AuthContext } from '../../contexts/AuthContext';
 import { profileService } from '../../services/database';
 
 export default function SettingsScreen({ navigation }) {
-  const { user, signOut } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  
+  // Add safety check for context
+  if (!authContext) {
+    console.error('SettingsScreen: AuthContext not found');
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Unable to load settings. Please try again.</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.retryButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const { user, signOut } = authContext;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState({
@@ -33,9 +54,11 @@ export default function SettingsScreen({ navigation }) {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      const result = await profileService.getProfile(user?.id);
-      if (result.data) {
-        setProfile(result.data);
+      if (user?.id) {
+        const result = await profileService.getProfile(user.id);
+        if (result.data) {
+          setProfile(result.data);
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -49,7 +72,7 @@ export default function SettingsScreen({ navigation }) {
       const savedPreferences = await AsyncStorage.getItem('userPreferences');
       if (savedPreferences) {
         const parsedPreferences = JSON.parse(savedPreferences);
-        setPreferences(parsedPreferences);
+        setPreferences({ ...preferences, ...parsedPreferences });
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
@@ -73,7 +96,14 @@ export default function SettingsScreen({ navigation }) {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => signOut(),
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Error signing out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
         },
       ]
     );
@@ -105,13 +135,17 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const togglePreference = async (key) => {
-    const newPreferences = {
-      ...preferences,
-      [key]: !preferences[key]
-    };
-    
-    setPreferences(newPreferences);
-    await savePreferences(newPreferences);
+    try {
+      const newPreferences = {
+        ...preferences,
+        [key]: !preferences[key]
+      };
+      
+      setPreferences(newPreferences);
+      await savePreferences(newPreferences);
+    } catch (error) {
+      console.error('Error saving preference:', error);
+    }
   };
 
   const SettingItem = ({ icon, title, subtitle, onPress, rightElement, showChevron = true }) => (
@@ -385,5 +419,26 @@ const styles = StyleSheet.create({
   footerSubtext: {
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#EF4444',
+    marginBottom: 20,
+  },
+  retryButton: {
+    padding: 12,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
 }); 
