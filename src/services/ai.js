@@ -12,9 +12,10 @@ const getOpenAIKey = () => {
   // For development, you can temporarily set your API key here
   // NEVER commit real API keys to version control!
   if (!apiKey || apiKey === 'your-openai-api-key-here') {
-    // ⚠️ TEMPORARY: Replace before production deployment
-    apiKey = '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';
-    console.warn('⚠️ Using fallback API key - set EXPO_PUBLIC_OPENAI_API_KEY environment variable');
+    // For local development, set your API key in the .env file
+    // EXPO_PUBLIC_OPENAI_API_KEY=your_api_key_here
+    console.warn('⚠️ OpenAI API key not found. Please set EXPO_PUBLIC_OPENAI_API_KEY in your .env file');
+    return null; // Return null if no API key is available
   }
   
   console.log('OpenAI API Key status:', apiKey ? `Found (${apiKey.substring(0, 10)}...)` : 'Missing');
@@ -32,6 +33,11 @@ const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 export const extractBusinessCardInfo = async (imageUri) => {
   try {
     console.log('Starting OpenAI Vision OCR for business card...');
+    
+    // Check if API key is available
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured. Please set EXPO_PUBLIC_OPENAI_API_KEY in your .env file');
+    }
     
     // Convert image to base64
     const base64Image = await convertImageToBase64(imageUri);
@@ -184,6 +190,11 @@ const convertImageToBase64 = async (imageUri) => {
 export const generateFollowUpMessage = async (contact, context = '', tone = 'professional') => {
   try {
     console.log('Generating follow-up message with OpenAI...');
+
+    // Check if API key is available
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured. Please set EXPO_PUBLIC_OPENAI_API_KEY in your .env file');
+    }
 
     const toneInstructions = {
       professional: 'formal and business-appropriate',
