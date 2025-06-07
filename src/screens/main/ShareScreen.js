@@ -88,10 +88,8 @@ Shared via DropCard
   };
 
   const handleCopyToClipboard = async () => {
-    if (!currentCard) return;
-      const Clipboard = await import('expo-clipboard');
-      await Clipboard.setStringAsync(cardText);
-      const cardText = `${currentCard.name}\n${currentCard.title || ''}\n${currentCard.company || ''}\n${currentCard.email || ''}\n${currentCard.phone || ''}\n${currentCard.website || ''}`;
+    try {
+      const cardText = `${currentCard.name}\n${currentCard.title}\n${currentCard.company}\n${currentCard.email}\n${currentCard.phone}`;
       
       await Clipboard.setStringAsync(cardText);
       Alert.alert('Copied!', 'Card information copied to clipboard.');
