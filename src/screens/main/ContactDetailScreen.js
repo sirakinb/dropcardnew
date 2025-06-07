@@ -10,67 +10,11 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getInitials, getAvatarColor, formatLastContact } from '../../utils/contactUtils';
 
 export default function ContactDetailScreen({ route, navigation }) {
   const { contact } = route.params;
   const [showAIModal, setShowAIModal] = useState(false);
-
-  // Generate initials from contact name
-  const getInitials = (name) => {
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return '?';
-    }
-    
-    try {
-      return name
-        .trim()
-        .split(' ')
-        .filter(word => word.length > 0)
-        .map(word => word[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2) || '?';
-    } catch (error) {
-      return '?';
-    }
-  };
-
-  // Generate a color based on the contact's name
-  const getAvatarColor = (name) => {
-    const colors = [
-      '#EF4444', '#F97316', '#F59E0B', '#EAB308',
-      '#84CC16', '#22C55E', '#10B981', '#14B8A6',
-      '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-      '#8B5CF6', '#A855F7', '#D946EF', '#EC4899'
-    ];
-    
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return colors[0];
-    }
-    
-    try {
-      const trimmedName = name.trim();
-      const index = trimmedName.length % colors.length;
-      return colors[index];
-    } catch (error) {
-      return colors[0];
-    }
-  };
-
-  const formatLastContact = (date) => {
-    if (!date) return 'No recent contact';
-    
-    const contactDate = new Date(date);
-    const now = new Date();
-    const diffTime = Math.abs(now - contactDate);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
 
   const handlePhonePress = () => {
     if (contact.phone) {
