@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
+// import * as Clipboard from 'expo-clipboard'; // Temporarily disabled - requires dev client rebuild
 import { useAuth } from '../../contexts/AuthContext';
 import { businessCardService } from '../../services/database';
 import QRCodeDisplay from '../../components/cards/QRCodeDisplay';
@@ -90,10 +90,16 @@ Shared via DropCard
 
   const handleCopyToClipboard = async () => {
     try {
-      const cardText = `${currentCard.name}\n${currentCard.title}\n${currentCard.company}\n${currentCard.email}\n${currentCard.phone}`;
+      // Temporarily disabled - requires development client rebuild for expo-clipboard
+      Alert.alert(
+        'Copy Feature Temporarily Disabled', 
+        'The copy to clipboard feature requires a development client rebuild. Use the Share button instead to share your card information.'
+      );
       
-      await Clipboard.setStringAsync(cardText);
-      Alert.alert('Copied!', 'Card information copied to clipboard.');
+      // Original clipboard code (will be restored after dev client rebuild):
+      // const cardText = `${currentCard.name}\\n${currentCard.title}\\n${currentCard.company}\\n${currentCard.email}\\n${currentCard.phone}`;
+      // await Clipboard.setStringAsync(cardText);
+      // Alert.alert('Copied!', 'Card information copied to clipboard.');
     } catch (error) {
       console.error('Copy error:', error);
       Alert.alert('Error', 'Failed to copy card information.');
