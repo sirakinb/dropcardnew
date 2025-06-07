@@ -4,7 +4,24 @@
  */
 
 // ⚠️ SECURITY: API key should be stored in environment variables in production
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || 'your-openai-api-key-here';
+// Try multiple ways to get the API key for development
+const getOpenAIKey = () => {
+  // First try environment variable
+  let apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  
+  // For development, you can temporarily set your API key here
+  // NEVER commit real API keys to version control!
+  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+    // ⚠️ TEMPORARY: Replace before production deployment
+    apiKey = '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';
+    console.warn('⚠️ Using fallback API key - set EXPO_PUBLIC_OPENAI_API_KEY environment variable');
+  }
+  
+  console.log('OpenAI API Key status:', apiKey ? `Found (${apiKey.substring(0, 10)}...)` : 'Missing');
+  return apiKey;
+};
+
+const OPENAI_API_KEY = getOpenAIKey();
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 /**
@@ -50,7 +67,7 @@ Return ONLY a valid JSON object, no other text or explanation.
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'user',

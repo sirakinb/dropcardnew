@@ -271,11 +271,24 @@ export default function AddContactScreen({ navigation, route }) {
                   {
                     text: 'OK',
                     onPress: () => {
-                      // Navigate back to the main contacts screen
-                      // Use reset to clear the navigation stack and go to Contacts
+                      // Navigate back to the main tabs and specifically to the Contacts tab
                       navigation.reset({
                         index: 0,
-                        routes: [{ name: 'Contacts' }],
+                        routes: [
+                          {
+                            name: 'MainTabs',
+                            state: {
+                              routes: [
+                                { name: 'Share' },
+                                { name: 'Cards' },
+                                { name: 'Contacts' },
+                                { name: 'Scan' },
+                                { name: 'Settings' }
+                              ],
+                              index: 2, // Contacts tab is at index 2
+                            },
+                          },
+                        ],
                       });
                     }
                   }
