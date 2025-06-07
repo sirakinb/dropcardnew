@@ -34,7 +34,10 @@ export default function CardDisplayScreen({ navigation, route }) {
   };
 
   const handleShare = () => {
-    navigation.navigate('Share', { cardData });
+    navigation.navigate('MainTabs', { 
+      screen: 'Share', 
+      params: { cardData } 
+    });
   };
 
   const handlePreview = () => {
