@@ -18,9 +18,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        console.log('Getting initial session...');
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Initial session:', session ? 'Found' : 'None');
+        setUser(session?.user ?? null);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+        setLoading(false);
+      }
     };
 
     getInitialSession();
@@ -28,6 +35,7 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
         setUser(session?.user ?? null);
         setLoading(false);
       }

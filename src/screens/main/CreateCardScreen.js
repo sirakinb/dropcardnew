@@ -96,13 +96,18 @@ export default function CreateCardScreen({ navigation, route }) {
 
   const handleImagePick = async () => {
     try {
-      // Show action sheet for camera vs photo library
+      console.log('Photo picker initiated');
+      
+      // Temporary fallback option while permissions are being fixed
       Alert.alert(
         'Upload Photo',
         'Choose how you\'d like to add a photo',
         [
           { text: 'Camera', onPress: () => pickFromCamera() },
           { text: 'Photo Library', onPress: () => pickFromLibrary() },
+          { text: 'Skip for Now', onPress: () => {
+            Alert.alert('Photo Upload', 'You can add a photo later by editing your card.');
+          }},
           { text: 'Cancel', style: 'cancel' }
         ]
       );
@@ -114,61 +119,115 @@ export default function CreateCardScreen({ navigation, route }) {
 
   const pickFromCamera = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      console.log('Requesting camera permissions...');
       
-      if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please allow camera access to take photos.');
-        return;
+      // Check if camera is available first
+      const cameraAvailable = await ImagePicker.getCameraPermissionsAsync();
+      console.log('Camera availability check:', cameraAvailable);
+      
+      let permissionResult;
+      if (cameraAvailable.status !== 'granted') {
+        permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        console.log('Camera permission result:', permissionResult);
+        
+        if (permissionResult.status !== 'granted') {
+          Alert.alert(
+            'Permission Required', 
+            'Camera access is required to take photos. Please enable it in Settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => {
+                // On iOS, this will open the app settings
+                console.log('User should open settings manually');
+              }}
+            ]
+          );
+          return;
+        }
       }
 
+      console.log('Launching camera...');
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        exif: false, // Reduce data size
       });
+
+      console.log('Camera result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        console.log('Selected asset:', { uri: asset.uri, width: asset.width, height: asset.height, fileSize: asset.fileSize });
+        
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert('Image Too Large', 'Please take a smaller photo.');
           return;
         }
+        console.log('Setting avatar:', asset.uri);
         setAvatar(asset.uri);
       }
     } catch (error) {
       console.error('Camera picker error:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      Alert.alert('Error', `Failed to take photo: ${error.message}. Please try again.`);
     }
   };
 
   const pickFromLibrary = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('Requesting media library permissions...');
       
-      if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to upload a photo.');
-        return;
+      // Check current permission status first
+      const libraryAvailable = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.log('Library availability check:', libraryAvailable);
+      
+      let permissionResult;
+      if (libraryAvailable.status !== 'granted') {
+        permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        console.log('Media library permission result:', permissionResult);
+        
+        if (permissionResult.status !== 'granted') {
+          Alert.alert(
+            'Permission Required', 
+            'Photo library access is required to upload photos. Please enable it in Settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => {
+                // On iOS, this will open the app settings
+                console.log('User should open settings manually');
+              }}
+            ]
+          );
+          return;
+        }
       }
 
+      console.log('Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
         selectionLimit: 1,
+        exif: false, // Reduce data size
       });
+
+      console.log('Library result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        console.log('Selected asset:', { uri: asset.uri, width: asset.width, height: asset.height, fileSize: asset.fileSize });
+        
         if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
           Alert.alert('Image Too Large', 'Please select an image smaller than 5MB.');
           return;
         }
+        console.log('Setting avatar:', asset.uri);
         setAvatar(asset.uri);
       }
     } catch (error) {
       console.error('Library picker error:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert('Error', `Failed to pick image: ${error.message}. Please try again.`);
     }
   };
 
